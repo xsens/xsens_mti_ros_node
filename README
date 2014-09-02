@@ -1,3 +1,41 @@
-ROS Driver for XSens MT/MTi/MTi-G devices.
+----PREREQUISITES----
+*a) Install the MTi USB Serial Driver - follow the instructions below
+git clone https://github.com/xsens/xsens_mt.git
+cd ~/xsens_mt
+make
+sudo modprobe usbserial
+sudo insmod ./xsens_mt.ko
 
-See: http://ros.org/wiki/ethzasl_xsens_driver
+_____________________________________________________________________
+----RUNNING XSENS MTi ROS NODE----
+1. Copy the contents of the src folder into your catkin workspace 'src' folder. Change the permission to 'rw' using the chmod command for these folders
+& folders. For details on creating a catkin workspace environment refer to "Creating a catkin ws" here
+http://wiki.ros.org/ROS/Tutorials/InstallingandConfiguringROSEnvironment#Create_a_ROS_Workspace
+
+2. in your catkin_ws folder, execute
+catkin_make
+
+3. source ~/catkin_ws/devel/setup.bash (Note: you have to do this for each terminal you open, if you are working in a single environment it is better to
+source it automatically by editing your ~/.bashrc - add the line to end of the file)
+
+4. Initiate 
+roscore
+
+5. Open a new terminal, type
+rosrun xsens_driver mtdevice.py -q fs (fs can be 1,5,10,20,40,50,80,100,200 or 400Hz)
+rosrun xsens_driver mtdevice.py -t fs (fs can be 1,5,10,20,40,50,80,100,200 or 400Hz)
+e.g.
+rosrun xsens_driver mtdevice.py -q 100 [this publishes the /xsens/sensorSample]
+rosrun xsens_driver mtdevice.py -t 100 [this publishes the /imu/data]
+
+This configures the MTi (MTi-10/20/30/100/200/300 or MTi-G-700) to output inertial data and magnetometer data at the set ODR. The maximum supported
+inertial update rate is 400Hz and for the magnetometer it is 100Hz
+
+6. To run the node
+rosrun xsens_driver mtnode.py _device:=/dev/ttyUSB0 _baudrate:=115200
+or
+rosrun xsens_driver mtnode.py 
+
+7. Open a new terminal (do not forget step 3)
+rostopic echo /xsens/sensorSample  or rostopic echo /imu/data
+
