@@ -12,9 +12,9 @@ verbose = False
 ################################################################
 # MTDevice class
 ################################################################
-## XSens MT device communication object.
+## Xsens MT device communication object.
 class MTDevice(object):
-	"""XSens MT device communication object."""
+	"""Xsens MT device communication object."""
 
 	def __init__(self, port, baudrate=115200, timeout=0.001, autoconf=True,
 			config_mode=False):
