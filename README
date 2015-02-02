@@ -5,9 +5,10 @@ cd ~/xsens_mt
 make
 sudo modprobe usbserial
 sudo insmod ./xsens_mt.ko
-
+*b) Install gps_common
+sudo apt-get install ros-distro-gps-common
 _____________________________________________________________________
-----RUNNING XSENS MTi ROS NODE----
+----RUNNING XSENS MTi ROS NODE v1.0----
 1. Copy the contents of the src folder into your catkin workspace 'src' folder. Change the permission to 'rw' using the chmod command for these folders
 & folders. For details on creating a catkin workspace environment refer to "Creating a catkin ws" here
 http://wiki.ros.org/ROS/Tutorials/InstallingandConfiguringROSEnvironment#Create_a_ROS_Workspace

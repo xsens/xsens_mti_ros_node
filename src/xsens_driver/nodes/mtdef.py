@@ -179,45 +179,6 @@ class Baudrates(object):
 		raise MTException("unknown baudrate id.")
 	
 
-class OutputMode:
-	"""Values for the output mode."""
-	Temp 		= 0x0001
-	Calib 		= 0x0002
-	Orient 		= 0x0004
-	Auxiliary 	= 0x0008
-	Position 	= 0x0010
-	Velocity 	= 0x0020
-	Status 		= 0x0800
-	RAWGPS 		= 0x1000	# supposed to be incompatible with previous
-	RAW 		= 0x4000	# incompatible with all except RAWGPS
-
-
-class OutputSettings:
-	"""Values for the output settings."""
-	Timestamp_None			= 0x00000000
-	Timestamp_SampleCnt 	= 0x00000001
-	OrientMode_Quaternion 	= 0x00000000
-	OrientMode_Euler		= 0x00000004
-	OrientMode_Matrix		= 0x00000008
-	CalibMode_AccGyrMag 	= 0x00000000
-	CalibMode_GyrMag 		= 0x00000010
-	CalibMode_AccMag 		= 0x00000020
-	CalibMode_Mag 			= 0x00000030
-	CalibMode_AccGyr 		= 0x00000040
-	CalibMode_Gyr 			= 0x00000050
-	CalibMode_Acc 			= 0x00000060
-	CalibMode_Mask 			= 0x00000070
-	DataFormat_Float 		= 0x00000000
-	DataFormat_12_20 		= 0x00000100	# not supported yet
-	DataFormat_16_32 		= 0x00000200	# not supported yet
-	DataFormat_Double 		= 0x00000300	# not supported yet
-	AuxiliaryMode_NoAIN1 	= 0x00000400
-	AuxiliaryMode_NoAIN2 	= 0x00000800
-	PositionMode_LLA_WGS84 	= 0x00000000
-	VelocityMode_MS_XYZ 	= 0x00000000
-	Coordinates_NED 		= 0x80000000
-
-
 class XDIGroup:
 	"""Values for the XDI groups."""
 	Temperature				= 0x0800
@@ -227,7 +188,7 @@ class XDIGroup:
 	Acceleration			= 0x4000
 	Position				= 0x5000
 	AngularVelocity			= 0x8000
-	GPS						= 0x8800
+	GNSS					= 0x8800
 	SensorComponentReadout	= 0xA000
 	AnalogIn				= 0xB000
 	Magnetic				= 0xC000
@@ -252,10 +213,13 @@ class XDIMessage:
 	Pressure				= 0x00003010
 	PressureFs				= 0x00000032 # 50Hz
 	StatusWord				= 0x0000E020
-	GpsDop					= 0x00008830
-	GpsSol					= 0x00008840
-	GpsSvInfo				= 0x000088A0
-	GpsFs					= 0x00000004 # 4Hz	
+	GnssPvtData				= 0x000088B0 # 4Hz TBD
+	GnssSatInfo				= 0x000088C0 # 4Hz TBD
+	GnssFs					= 0x00000004
+	PositionLatLon			= 0x00005040 # Latitude and longitude
+	PositionHeight			= 0x00005020 # Ellipsoidal height
+	Velocity 				= 0x0000D010 # Velocity in ENU
+	Orientation				= 0x00002030 # Euler orientation ENU
 	
 
 class MTException(Exception):

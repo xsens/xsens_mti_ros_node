@@ -4,14 +4,16 @@ import rospy
 import select
 import mtdevice
 import math
+import pdb
 
-from std_msgs.msg import Header, Float32
-from sensor_msgs.msg import Imu, NavSatFix, NavSatStatus
-from geometry_msgs.msg import TwistStamped, Vector3Stamped
+from std_msgs.msg import Header, Float32, Float64, Float64MultiArray
+from sensor_msgs.msg import Imu
+from geometry_msgs.msg import TwistStamped, Vector3Stamped, QuaternionStamped
 from gps_common.msg import GPSFix, GPSStatus
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus, KeyValue
 from custom_msgs.msg import sensorSample
-
+# UNSUPPORTED
+from sensor_msg.msg import NavSatFix, NavSatStatus
 
 # transform Euler angles or matrix into quaternions
 from math import pi, radians
@@ -92,6 +94,9 @@ class XSensDriver(object):
 
 		self.imu_pub = rospy.Publisher('imu/data', Imu, queue_size=10)
 		self.ss_pub = rospy.Publisher('xsens/sensorSample', sensorSample, queue_size=10)
+		self.mt_dv_pub = rospy.Publisher('xsens/matlabDv', Vector3Stamped, queue_size=100)
+		self.mt_dq_pub = rospy.Publisher('xsens/matlabDq', QuaternionStamped, queue_size=100)
+		self.mt_mag_pub = rospy.Publisher('xsens/matlabMag', Vector3Stamped, queue_size=100)
 		self.gps_pub = rospy.Publisher('fix', NavSatFix, queue_size=10)
 		self.xgps_pub = rospy.Publisher('fix_extended', GPSFix, queue_size=10)
 		self.vel_pub = rospy.Publisher('velocity', TwistStamped, queue_size=10)
@@ -170,13 +175,25 @@ class XSensDriver(object):
 		pub_mag = False
 		temp_msg = Float32()
 		pub_temp = False
+		# for Matlab
+		mt_dv_msg = Vector3Stamped()
+		pub_mt_dv = False
+		mt_dq_msg = QuaternionStamped()
+		pub_mt_dq = False
+		mt_mag_msg = Vector3Stamped()
+		pub_mt_mag = False
+
 
 		if ssAcc_data:
 			if 'Delta v.x' in ssAcc_data: # found delta-v's
 				pub_ss = True
 				ss_msg.internal.imu.dv.x = ssAcc_data['Delta v.x']
 				ss_msg.internal.imu.dv.y = ssAcc_data['Delta v.y']
-				ss_msg.internal.imu.dv.z = ssAcc_data['Delta v.z']		
+				ss_msg.internal.imu.dv.z = ssAcc_data['Delta v.z']	
+				pub_mt_dv = True
+				mt_dv_msg.vector.x=ssAcc_data['Delta v.x']
+				mt_dv_msg.vector.y=ssAcc_data['Delta v.y']
+				mt_dv_msg.vector.z=ssAcc_data['Delta v.z']					
 			elif 'accX' in ssAcc_data: # found acceleration
 				pub_imu = True
 				imu_msg.linear_acceleration.x = ssAcc_data['accX']
@@ -192,6 +209,12 @@ class XSensDriver(object):
 				ss_msg.internal.imu.dq.x = ssGyr_data['Delta q1']
 				ss_msg.internal.imu.dq.y = ssGyr_data['Delta q2']
 				ss_msg.internal.imu.dq.z = ssGyr_data['Delta q3']
+				pub_mt_dq = True
+				mt_dq_msg.quaternion.w = ssGyr_data['Delta q0']
+				mt_dq_msg.quaternion.x = ssGyr_data['Delta q1']
+				mt_dq_msg.quaternion.y = ssGyr_data['Delta q2']
+				mt_dq_msg.quaternion.z = ssGyr_data['Delta q3']
+				
 			elif 'gyrX' in ssGyr_data: # found rate of turn
 				pub_imu = True
 				imu_msg.angular_velocity.x = ssGyr_data['gyrX']
@@ -205,6 +228,10 @@ class XSensDriver(object):
 			ss_msg.internal.mag.x = ssMag_data['magX']
 			ss_msg.internal.mag.y = ssMag_data['magY']
 			ss_msg.internal.mag.z = ssMag_data['magZ']
+			pub_mt_mag = True
+			mt_mag_msg.vector.x=ssMag_data['magX']
+			mt_mag_msg.vector.y=ssMag_data['magY']
+			mt_mag_msg.vector.z=ssMag_data['magZ']				
 		if ssTime_data:
 			# first getting the sampleTimeFine
 			x = ssTime_data['SampleTimeFine']
@@ -212,7 +239,14 @@ class XSensDriver(object):
 			nsecs = 1e5*x - 1e9*math.floor(secs)
 			ss_msg.time.data.secs = secs
 			ss_msg.time.data.nsecs = nsecs
-		# to fix
+			mt_dv_msg.header.stamp.secs = secs 
+			mt_dv_msg.header.stamp.nsecs = nsecs
+			mt_dq_msg.header.stamp.secs = secs 
+			mt_dq_msg.header.stamp.nsecs = nsecs
+			mt_mag_msg.header.stamp.secs = secs 
+			mt_mag_msg.header.stamp.nsecs = nsecs
+
+			# to fix
 		if rawgps_data:
 			if rawgps_data['bGPS']<self.old_bGPS:
 				pub_gps = True
@@ -229,6 +263,7 @@ class XSensDriver(object):
 		if temp is not None:
 			pub_temp = True
 			temp_msg.data = temp
+		
 		if imu_data:
 			try:
 				x = imu_data['gyrX']
@@ -354,6 +389,12 @@ class XSensDriver(object):
 			self.temp_pub.publish(temp_msg)
 		if pub_ss:
 			self.ss_pub.publish(ss_msg)
+		if pub_mt_dq:
+			self.mt_dq_pub.publish(mt_dq_msg)
+		if pub_mt_dv:
+			self.mt_dv_pub.publish(mt_dv_msg)
+		if pub_mt_mag:
+			self.mt_mag_pub.publish(mt_mag_msg)		
 			
 
 def main():

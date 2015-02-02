@@ -16,3 +16,5 @@ ImuSensorSample imu
 
 geometry_msgs/Vector3 mag
 
+BaroSensorSample baro
+
