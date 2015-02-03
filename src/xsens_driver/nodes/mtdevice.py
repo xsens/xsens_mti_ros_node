@@ -2,7 +2,7 @@
 import serial
 import struct
 
-import sys, getopt, time, glob, pdb
+import sys, getopt, time, glob, math, pdb
 
 from mtdef import MID, MTException, Baudrates, XDIGroup, getName, getMIDName, XDIMessage
 
@@ -16,18 +16,15 @@ verbose = False
 class MTDevice(object):
 	"""Xsens MT device communication object."""
 
-	def __init__(self, port, baudrate=115200, timeout=0.001, autoconf=True,
+	def __init__(self, port, baudrate=115200, timeout=0.1, autoconf=True,
 			config_mode=False):
 		"""Open device."""
-		## serial interface to the device
-		# time out to support lower ODRs
-		# TODO: make this dependent on the chosen ODR
 		self.device = serial.Serial(port, baudrate, timeout=timeout,
 				writeTimeout=timeout)
 		self.device.flushInput()	# flush to make sure the port is ready TODO
 		self.device.flushOutput()	# flush to make sure the port is ready TODO
 		## timeout for communication
-		self.timeout = 1000*timeout
+		self.timeout = timeout
 		if autoconf:
 			self.auto_config()
 		else:
@@ -172,7 +169,7 @@ class MTDevice(object):
 			if 0xFF&sum(data, 0xFF+mid+length+checksum):
 				sys.stderr.write("invalid checksum; discarding data and "\
 						"waiting for next message.\n")
-				continue
+				continue			
 			return (mid, buf[:-1])
 		else:
 			raise MTException("could not find message.")
@@ -329,8 +326,13 @@ class MTDevice(object):
 	def SetBaudrate(self, brid):
 		"""Set the baudrate of the device using the baudrate id.
 		Assume the device is in Config state."""
-		self.write_ack(MID.SetBaudrate, (brid,))
-
+		baudRateAck = False
+		self.write_msg(MID.SetBaudrate, (brid,))
+		dataAck = self.write_ack(MID.SetBaudrate, ())
+		bridAck = struct.unpack('!B',dataAck)
+		if bridAck[0] == brid:
+			baudRateAck = True
+		return baudRateAck
 
 	## Request the available XKF scenarios on the device.
 	# Assume the device is in Config state.
@@ -386,9 +388,11 @@ class MTDevice(object):
 	############################################################
 	## Configure the mode and settings of the MT MK4 device.
 	# this configures the MK4 devices to publish Xsens sensorSample format
-	def configureMti(self, mtiSampleRate):
+	def configureMti(self, mtiSampleRate, mtiMode):
 		"""Configure the mode and settings of the MTMk4 device."""
 		self.GoToConfig()
+		self.timeout = math.pow(mtiSampleRate,-1)+1e-1 #additional leeway
+		print "Timeout set to %1.3f s"%(self.timeout)
 		mid = MID.SetOutputConfiguration
 		midReqDID = MID.ReqDID
 		dataReqDID = (0x00, 0x00)
@@ -417,44 +421,79 @@ class MTDevice(object):
 			new_pressure_period = mtiSampleRate
 		
 		# All messages with corresponding output data rates
+		"Packet couter, SampleTimeFine"
 		mPc = self.getMtiConfigBytes(XDIMessage.PacketCounter, XDIMessage.PaddedFs)
 		mStf = self.getMtiConfigBytes(XDIMessage.SampleTimeFine, XDIMessage.PaddedFs)
+		"Sensor data"
 		mImuDq = self.getMtiConfigBytes(XDIMessage.DeltaQ, new_imu_period)
-		mImuGyr = self.getMtiConfigBytes(XDIMessage.RateOfTurn, rate_imu_period)
 		mImuDv = self.getMtiConfigBytes(XDIMessage.DeltaV, new_imu_period)
-		mImuAcc = self.getMtiConfigBytes(XDIMessage.Acceleration, rate_imu_period)
+		"Sensor data (rate quantities)"
 		mImuMag = self.getMtiConfigBytes(XDIMessage.MagneticField, new_mag_period)
+		mImuGyr = self.getMtiConfigBytes(XDIMessage.RateOfTurn, rate_imu_period)
+		mImuAcc = self.getMtiConfigBytes(XDIMessage.Acceleration, rate_imu_period)
+		"Baro data"
 		mImuP = self.getMtiConfigBytes(XDIMessage.Pressure, new_pressure_period)
+		"GNSS data"
 		mGnssPvt = self.getMtiConfigBytes(XDIMessage.GnssPvtData, XDIMessage.GnssFs)
 		mGnssSat = self.getMtiConfigBytes(XDIMessage.GnssSatInfo, XDIMessage.GnssFs)
+		"Status word"
 		mSw = self.getMtiConfigBytes(XDIMessage.StatusWord, XDIMessage.PaddedFs)
 		# Filter related messages
+		"Filter estimate"
 		mOrientation = self.getMtiConfigBytes(XDIMessage.Orientation,rate_imu_period)
 		mVelocity = self.getMtiConfigBytes(XDIMessage.Velocity,rate_imu_period)
 		mPosition = self.getMtiConfigBytes(XDIMessage.PositionLatLon,rate_imu_period)
-		mHeight = self.getMtiConfigBytes(XDIMessage.PositionHeight,rate_imu_period)
+		mHeight = self.getMtiConfigBytes(XDIMessage.PositionHeight,rate_imu_period)	
 		
-		
-		# extra IMU messages
-			
+		# Output configuration set based on the product ID and user specification	
 		if deviceID[0:4] == '0x77':
-			print "MTi-G-700/710 (GNSS/INS) device detected."
-			print "Enabled: Inertial, mag, baro & GPS data."
-			data = mPc+mStf+mImuDq+mImuGyr+mImuDv+mImuAcc+mImuMag+mImuP+mGnssPvt+mGnssSat \
-			+mSw+mOrientation+mVelocity+mPosition+mHeight
+			print "MTi-G-700/710 (GNSS/INS) device detected"
+			if mtiMode == 1:
+				print "Enabled publishing all sensor data"
+				data = mPc+mStf+mImuDq+mImuDv+mImuMag+mImuP+mGnssPvt+mGnssSat+mSw
+			elif mtiMode == 2:
+				print "Enabled publishing all sensor data (rate quantities)"
+				data = mPc+mStf+mImuGyr+mImuAcc+mImuMag+mImuP+mGnssPvt+mGnssSat+mSw
+			elif mtiMode == 3:
+				print "Enabled publishing all filter estimates"
+				data = mPc+mStf+mSw+mOrientation+mVelocity+mPosition+mHeight
+			else:
+				raise MTException("unknown mtiMode: (%d)."%	(mtiMode))			
 		elif (deviceID[0:4] == '0x17') | (deviceID[0:4] == '0x27') | (deviceID[0:4] == '0x37'):
 			print "MTi-100/200/300 device detected."
-			print "Enabled: Inertial, mag & baro data"
-			data = mPc+mStf+mImuDq+mImuGyr+mImuDv+mImuAcc+mImuMag+mImuP+mOrientation+mSw
+			if mtiMode == 1:
+				print "Enabled publishing all sensor data"
+				data = mPc+mStf+mImuDq+mImuDv+mImuMag+mImuP+mSw
+			elif mtiMode == 2:
+				print "Enabled publishing all sensor data (rate quantities)"
+				data = mPc+mStf+mImuGyr+mImuAcc+mImuMag+mImuP+mSw
+			elif mtiMode == 3:
+				print "Enabled publishing all filter estimates"
+				data = mPc+mStf+mSw+mOrientation
+			else:
+				raise MTException("unknown mtiMode: (%d)."%	(mtiMode))
 		elif (deviceID[0:4] == '0x16') | (deviceID[0:4] == '0x26') | (deviceID[0:4] == '0x36'):
 			print "MTi-10/20/30 device detected"
-			print "Enabled: Inertial & mag data"
-			data = mPc+mStf+mImuDq+mImuGyr+mImuDv+mImuAcc+mImuMag+mOrientation+mSw
-			print "Device can configure the following ROS messages -"
+			if mtiMode == 1:
+				print "Enabled publishing all sensor data"
+				data = mPc+mStf+mImuDq+mImuDv+mImuMag+mSw
+			elif mtiMode == 2:
+				print "Enabled publishing all sensor data (rate quantities)"
+				data = mPc+mStf+mImuGyr+mImuAcc+mImuMag+mSw
+			elif mtiMode == 3:
+				print "Enabled publishing all filter estimates"
+				data = mPc+mStf+mSw+mOrientation
+			else:
+				raise MTException("unknown mtiMode: (%d)."%	(mtiMode))
 		else:
 			raise MTException("Unknown device")
 		
 		self.write_msg(mid, data)
+		# check for the set baudrate
+		dataAck = self.write_ack(MID.SetBaudrate, ())
+		bridAck = struct.unpack('!B',dataAck)
+		brSettings = Baudrates.get_BR(bridAck[0])
+		print "Device configured at %1.0f bps"%(brSettings)
 		self.GoToMeasurement()
 		
 	def getMtiConfigBytes(self, dataMessage, dataFs):
@@ -535,8 +574,7 @@ class MTDevice(object):
 				raise MTException("unknown packet: 0x%04X."%data_id)
 			return o
 		def parse_pressure(data_id, content, ffmt):
-			o = {}
-			
+			o = {}			
 			if (data_id&0x00F0) == 0x10:	# Baro pressure
 				# FIXME is it really U4 as in the doc and not a float/double?
 				o['Pressure'], = struct.unpack('!L', content)
@@ -559,18 +597,15 @@ class MTDevice(object):
 			return o
 		def parse_position(data_id, content, ffmt):
 			o = {}
-			if (data_id&0x00F0) == 0x10:	# Altitude MSL
-				o['altMsl'], = struct.unpack('!'+ffmt, content)
+			heightFlag = False
+			if (data_id&0x00F0) == 0x40:	# LatLon
+				o['lat'], o['lon'] = struct.unpack('!'+2*ffmt, content)				
 			elif (data_id&0x00F0) == 0x20:	# Altitude Ellipsoid
-				o['altEllipsoid'], = struct.unpack('!'+ffmt, content)
-			elif (data_id&0x00F0) == 0x30:	# Position ECEF
-				o['ecefX'], o['ecefY'], o['ecefZ'] = \
-						struct.unpack('!'+3*ffmt, content)
-			elif (data_id&0x00F0) == 0x40:	# LatLon
-				o['lat'], o['lon'] = struct.unpack('!'+2*ffmt, content)
+				o['ellipsoid'] = struct.unpack('!'+ffmt, content)
+				heightFlag = True
 			else:
 				raise MTException("unknown packet: 0x%04X."%data_id)
-			return o
+			return o, heightFlag 
 		def parse_angular_velocity(data_id, content, ffmt):
 			o = {}
 			# FIXME is it really 802y and 803y as in the doc?
@@ -585,6 +620,7 @@ class MTDevice(object):
 			return o
 		def parse_GNSS(data_id, content, ffmt):
 			o = {}
+			pvtFlag = False
 			if (data_id&0x00F0) == 0xB0:	# GNSS PVT DATA
 				o['iTOW'],x1,x2,x3,x4,x5,x6,x7,x8,x9,fix,flag,nSv,x10,lon,lat,h,a,hAcc, \
 				vAcc,vN,vE,vD,x11,x12,sAcc,x13,x14,gDop,pDop,tDop,vDop,hDop,nDop,eDop = \
@@ -594,6 +630,7 @@ class MTDevice(object):
 				o['VDOP'], o['HDOP'], o['NDOP'], o['EDOP'] = 1e-7*lat, 1e-7*lon, 1e-3*h, \
 						1e-3*a, 1e-3*vN, 1e-3*vE, 1e-3*vD, 1e-3*hAcc, 1e-3*vAcc, sAcc, 1e-2*gDop, \
 						1e-2*pDop, 1e-2*tDop, 1e-2*vDop, 1e-2*hDop, 1e-2*nDop, 1e-2*eDop 
+				pvtFlag = True
 			elif (data_id&0x00F0) == 0xC0:	# GNSS SAT Info
 				o['iTOW'], o['numCh'] = struct.unpack('!LBxxx', content[:8])
 				channels = []
@@ -604,9 +641,9 @@ class MTDevice(object):
 					channels.append(ch)
 					ch = {} # empty 
 				o['channels'] = channels
-			#else:
-			#	raise MTException("unknown packet: 0x%04X."%data_id)
-				return o
+			else:
+				raise MTException("unknown packet: 0x%04X."%data_id)
+			return o, pvtFlag
 		def parse_SCR(data_id, content, ffmt):
 			o = {}
 			if (data_id&0x00F0) == 0x10:	# ACC+GYR+MAG+Temperature
@@ -682,11 +719,19 @@ class MTDevice(object):
 				elif group == XDIGroup.Acceleration:
 					output['Acceleration'] = parse_acceleration(data_id, content, ffmt)
 				elif group == XDIGroup.Position:
-					output['Position'] = parse_position(data_id, content, ffmt)
+					temp, dataFlagPos = parse_position(data_id, content, ffmt)
+					if dataFlagPos:
+						output['height'] = temp
+					else:
+						output['pos'] = temp
 				elif group == XDIGroup.AngularVelocity:
 					output['Angular Velocity'] = parse_angular_velocity(data_id, content, ffmt)
 				elif group == XDIGroup.GNSS:
-					output['GNSS'] = parse_GNSS(data_id, content, ffmt)
+					temp, dataFlagGnss = parse_GNSS(data_id, content, ffmt)
+					if dataFlagGnss:
+						output['GNSSPVT'] = temp
+					else:
+						output['GNSSSATINFO'] = temp
 				elif group == XDIGroup.SensorComponentReadout:
 					output['SCR'] = parse_SCR(data_id, content, ffmt)
 				elif group == XDIGroup.AnalogIn:
@@ -709,15 +754,13 @@ class MTDevice(object):
 		"""Change the baudrate, reset the device and reopen communication."""
 		self.GoToConfig()
 		brid = Baudrates.get_BRID(baudrate)
-		self.SetBaudrate(brid)
-		self.Reset()
-		#self.device.flush()
-		self.device.baudrate=baudrate
-		#self.device.flush()
-		time.sleep(0.01)
-		self.read_msg()
-		self.write_msg(0x3f)
-
+		bridAck = self.SetBaudrate(brid)
+		if bridAck: # Testing if the BR was set correctly
+			self.device.baudrate=baudrate
+			print "Baudrate set to %d bps"%baudrate
+			time.sleep(0.01)
+		else:
+			print "NOK:Baudrate not configured."
 
 
 
@@ -771,13 +814,13 @@ Commands:
 	-f, --mtiSampleRate=SAMPLERATE
 		Configures the device to the specified Output Data Rate (ODR).Possible 
 		ODR's are 1,2,4,5,10,20,40,50,80,100,200 & 400 (the maximum output rate 
-		for mag, baro and GNSS sensor is 100Hz, 50Hz and 4Hz respectively) 			
+		for mag, baro and GNSS sensor is 100Hz, 50Hz and 4Hz respectively)
+	-m, --sensorMode=SENSORMODE
+		Configures the device to a particular sensor mode. The values can be 1
+		(for sensor data),2 (for sensor data with rate quantities) or 
+		3(for filter estimates). Use it in conjunction with -f command 		 			
 	-a, --change-baudrate=NEW_BAUD
-		Change baudrate from BAUD (see below) to NEW_BAUD.
-	-c, --configure
-		Detect, reset and configure a MTi device to output sensor data based 
-		on the functionality(IMU, VRU, AHRS or GNSS/AHRS). The configure option
-		requires MTISAMPLERATE.
+		Change baudrate from BAUD (see below) to NEW_BAUD.	
 	-e, --echo
 		Print MTData. It is the default if no other command is supplied.
 	-i, --inspect
@@ -805,10 +848,10 @@ Options:
 ################################################################
 def main():
 	# parse command line
-	shopts = 'hra:eid:b:s:x:f:'
+	shopts = 'hra:eid:b:s:x:f:m:'
 	lopts = ['help', 'reset', 'change-baudrate=', 'echo',
 			'inspect', 'device=', 'baudrate=', 'skip-factor=', 
-			'xkf-scenario=', 'mti-odr=']
+			'xkf-scenario=', 'mti-odr=','mti-mode=']
 	try:
 		opts, args = getopt.gnu_getopt(sys.argv[1:], shopts, lopts)
 		#pdb.set_trace()
@@ -819,7 +862,7 @@ def main():
 	# default values
 	device = '/dev/ttyUSB0'
 	baudrate = 115200
-	mode = None
+	mode = 1
 	settings = None
 	period = None
 	skipfactor = None
@@ -872,7 +915,15 @@ def main():
 				actions.append('setMtiOutputConfiguration')
 			except ValueError:
 				print "MTi sample rate argument must be integer."
-				return 1								
+				return 1	
+		if o in ('-m','--mti-mode'):
+			try:
+				mode = int(a)
+				actions.append('setMtiOutputConfiguration')
+			except ValueError:
+				print "MTi mode argument must be integer."
+				return 1	
+										
 				
 	# if nothing else: echo
 	if len(actions) == 0:
@@ -908,10 +959,9 @@ def main():
 			print "Current scenario: %s (id: %d)"%mt.ReqCurrentScenario()[::-1]
 			mt.GoToMeasurement()
 		if 'change-baudrate' in actions:
-			print "Changing baudrate from %d to %d bps"%(baudrate, new_baudrate),
+			print "Changing baudrate from %d to %d bps\n"%(baudrate, new_baudrate),
 			sys.stdout.flush()
 			mt.ChangeBaudrate(new_baudrate)
-			print " Ok"		# should we test it was actually ok?
 		if 'reset' in actions:
 			print "Restoring factory defaults",
 			sys.stdout.flush()
@@ -928,8 +978,7 @@ def main():
 			sys.stdout.flush()
 			mt.GoToConfig()
 			print "Device intiated at %d Hz"%(sampleRate)
-			mt.configureMti(sampleRate)
-			print "Device: %s at %d bps"%(device, baudrate)				
+			mt.configureMti(sampleRate,mode)
 		if 'echo' in actions:
 			try:
 				while True:
