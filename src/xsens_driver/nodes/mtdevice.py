@@ -2,7 +2,7 @@
 import serial
 import struct
 
-import sys, getopt, time, glob, math, pdb
+import sys, getopt, time, glob, math, pdb, numpy
 
 from mtdef import MID, MTException, Baudrates, XDIGroup, getName, getMIDName, XDIMessage
 
@@ -298,28 +298,14 @@ class MTDevice(object):
 	def ReqConfiguration(self):
 		"""Ask for the current configuration of the MT device.
 		Assume the device is in Config state."""
-		config = self.write_ack(MID.ReqConfiguration)
+		data_ack = self.write_ack(MID.SetOutputConfiguration,())
+		config = []
 		try:
-			masterID, period, skipfactor, _, _, _, date, time, num, deviceID,\
-					length, mode, settings =\
-					struct.unpack('!IHHHHI8s8s32x32xHIHHI8x', config)
+			for i in range(len(data_ack)/4):
+				config.append(struct.unpack('!HH', data_ack[i*4:i*4+4]))				
 		except struct.error:
 			raise MTException("could not parse configuration.")
-		self.mode = mode
-		self.settings = settings
-		self.length = length
-		self.header = '\xFA\xFF\x32'+chr(length)
-		conf = {'output-mode': mode,
-				'output-settings': settings,
-				'length': length,
-				'period': period,
-				'skipfactor': skipfactor,
-				'Master device ID': masterID,
-				'date': date,
-				'time': time,
-				'number of devices': num,
-				'device ID': deviceID}
-		return conf
+		return config
 
 	## Set the baudrate of the device using the baudrate id.
 	# Assume the device is in Config state.
@@ -391,8 +377,8 @@ class MTDevice(object):
 	def configureMti(self, mtiSampleRate, mtiMode):
 		"""Configure the mode and settings of the MTMk4 device."""
 		self.GoToConfig()
-		self.timeout = math.pow(mtiSampleRate,-1)+1e-1 #additional leeway
-		print "Timeout set to %1.3f s"%(self.timeout)
+		self.timeout = math.pow(mtiSampleRate,-1)+0.005 # additional 5ms leeway
+		print "Timeout changed to %1.3fs based on current settings."%(self.timeout)
 		mid = MID.SetOutputConfiguration
 		midReqDID = MID.ReqDID
 		dataReqDID = (0x00, 0x00)
@@ -507,15 +493,14 @@ class MTDevice(object):
 	def auto_config(self):
 		"""Read configuration from device."""
 		self.GoToConfig()
-		self.ReqConfiguration()
+		config =self.ReqConfiguration()
+		Config = numpy.array(config)
+		configuredMtiFs = numpy.max(Config[Config[:,1]!=65535,1])
+		self.timeout = math.pow(configuredMtiFs,-1)+0.005 # additional 5ms leeway
+		print "Timeout defaults to %1.3fs based on output settings."%(self.timeout)
 		self.GoToMeasurement()
-		return self.mode, self.settings, self.length
-		#self.GoToConfig()
-		#mode = self.GetOutputMode()
-		#settings = self.GetOutputSettings()
-		#length = self.ReqDataLength()
-		#self.GoToMeasurement()
-		#return mode, settings, length
+		return self.timeout
+		
 
 	## Read and parse a measurement packet
 	def read_measurement(self, mode=None, settings=None):
