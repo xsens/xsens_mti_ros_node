@@ -188,7 +188,7 @@ class XDIGroup:
 	Acceleration			= 0x4000
 	Position				= 0x5000
 	AngularVelocity			= 0x8000
-	GNSS					= 0x8800
+	GNSS					= 0x7000
 	SensorComponentReadout	= 0xA000
 	AnalogIn				= 0xB000
 	Magnetic				= 0xC000
@@ -213,8 +213,8 @@ class XDIMessage:
 	Pressure				= 0x00003010
 	PressureFs				= 0x00000032 # 50Hz
 	StatusWord				= 0x0000E020
-	GnssPvtData				= 0x000088B0 # 4Hz TBD
-	GnssSatInfo				= 0x000088C0 # 4Hz TBD
+	GnssPvtData				= 0x00007010 # 4Hz TBD
+	GnssSatInfo				= 0x00007020 # 4Hz TBD
 	GnssFs					= 0x00000004
 	PositionLatLon			= 0x00005040 # Latitude and longitude
 	PositionHeight			= 0x00005020 # Ellipsoidal height

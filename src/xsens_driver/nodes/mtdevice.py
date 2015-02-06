@@ -606,7 +606,7 @@ class MTDevice(object):
 		def parse_GNSS(data_id, content, ffmt):
 			o = {}
 			pvtFlag = False
-			if (data_id&0x00F0) == 0xB0:	# GNSS PVT DATA
+			if (data_id&0x00F0) == 0x10:	# GNSS PVT DATA
 				o['iTOW'],x1,x2,x3,x4,x5,x6,x7,x8,x9,fix,flag,nSv,x10,lon,lat,h,a,hAcc, \
 				vAcc,vN,vE,vD,x11,x12,sAcc,x13,x14,gDop,pDop,tDop,vDop,hDop,nDop,eDop = \
 						struct.unpack('!LHBBBBBBLiBBBBiiiiLLiiiiiLLIHHHHHHH', content)
@@ -616,7 +616,7 @@ class MTDevice(object):
 						1e-3*a, 1e-3*vN, 1e-3*vE, 1e-3*vD, 1e-3*hAcc, 1e-3*vAcc, sAcc, 1e-2*gDop, \
 						1e-2*pDop, 1e-2*tDop, 1e-2*vDop, 1e-2*hDop, 1e-2*nDop, 1e-2*eDop 
 				pvtFlag = True
-			elif (data_id&0x00F0) == 0xC0:	# GNSS SAT Info
+			elif (data_id&0x00F0) == 0x20:	# GNSS SAT Info
 				o['iTOW'], o['numCh'] = struct.unpack('!LBxxx', content[:8])
 				channels = []
 				ch = {}
