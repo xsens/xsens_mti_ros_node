@@ -366,7 +366,14 @@ class MTDevice(object):
 	def SetCurrentScenario(self, scenario_id):
 		"""Sets the XKF scenario to use.
 		Assume the device is in Config state."""
-		self.write_ack(MID.SetCurrentScenario, (0x00, scenario_id&0xFF))
+		data = self.ReqAvailableScenarios()
+		availableSc = numpy.array(data)
+		validateSc = availableSc == str(scenario_id)
+		if validateSc.any():
+			self.write_ack(MID.SetCurrentScenario, (0x00, scenario_id&0xFF))
+			print "Set to scenario:%2d"%scenario_id
+		else:
+			raise MTException("not an available XKF scenario")
 
 
 	############################################################
@@ -377,7 +384,7 @@ class MTDevice(object):
 	def configureMti(self, mtiSampleRate, mtiMode):
 		"""Configure the mode and settings of the MTMk4 device."""
 		self.GoToConfig()
-		self.timeout = math.pow(mtiSampleRate,-1)+0.005 # additional 5ms leeway
+		self.timeout = math.pow(mtiSampleRate,-1)+MID.additionalTimeOutOffset  # additional 5ms leeway
 		print "Timeout changed to %1.3fs based on current settings."%(self.timeout)
 		mid = MID.SetOutputConfiguration
 		midReqDID = MID.ReqDID
@@ -495,9 +502,13 @@ class MTDevice(object):
 		self.GoToConfig()
 		config =self.ReqConfiguration()
 		Config = numpy.array(config)
-		configuredMtiFs = numpy.max(Config[Config[:,1]!=65535,1])
-		self.timeout = math.pow(configuredMtiFs,-1)+0.005 # additional 5ms leeway
-		print "Timeout defaults to %1.3fs based on output settings."%(self.timeout)
+		if Config.any():
+			configuredMtiFs = numpy.max(Config[Config[:,1]!=65535,1])
+			self.timeout = math.pow(configuredMtiFs,-1)+MID.additionalTimeOutOffset  # additional 5ms leeway
+			print "Timeout defaults to %1.3fs based on output settings."%(self.timeout)
+		else:
+			self.timeout = 1+MID.additionalTimeOutOffset 
+			print "Timeout defaults to %1.3fs based on output settings."%(self.timeout)
 		self.GoToMeasurement()
 		return self.timeout
 		
@@ -509,7 +520,7 @@ class MTDevice(object):
 		if mid==MID.MTData2:
 			return self.parse_MTData2(data)
 		else:
-			raise MTException("unknown data message: mid=0x%02X (%s)."%	(mid, getMIDName(mid)))
+			raise MTException("Only MTData2 supported, use -f and -m to configure MTi.\n unknown data message: mid=0x%02X (%s)."%	(mid, getMIDName(mid)))
 
 	## Parse a new MTData2 message
 	def parse_MTData2(self, data):
@@ -953,7 +964,7 @@ def main():
 			mt.RestoreFactoryDefaults()
 			print " Ok"		# should we test it was actually ok?
 		if 'xkf-scenario' in actions:
-			print "Changing XKF scenario",
+			print "Changing XKF scenario..."
 			sys.stdout.flush()
 			mt.GoToConfig()
 			mt.SetCurrentScenario(new_xkf)

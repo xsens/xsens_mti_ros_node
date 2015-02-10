@@ -122,6 +122,9 @@ class MID:
 	SetProcessingFlags = 0x20
 	## Initiate No Rotation procedure (not on MTi-G), 2 bytes
 	SetNoRotation = 0x22
+	
+	## Some timeout related stuff
+	additionalTimeOutOffset = 0.006 # 6ms
 
 
 def getName(cls, value):
