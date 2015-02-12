@@ -415,7 +415,7 @@ class MTDevice(object):
 		
 		# All messages with corresponding output data rates
 		"Packet couter, SampleTimeFine"
-		mPc = self.getMtiConfigBytes(XDIMessage.PacketCounter, XDIMessage.PaddedFs)
+		# mPc = self.getMtiConfigBytes(XDIMessage.PacketCounter, XDIMessage.PaddedFs)
 		mStf = self.getMtiConfigBytes(XDIMessage.SampleTimeFine, XDIMessage.PaddedFs)
 		"Sensor data"
 		mImuDq = self.getMtiConfigBytes(XDIMessage.DeltaQ, new_imu_period)
@@ -433,6 +433,7 @@ class MTDevice(object):
 		mSw = self.getMtiConfigBytes(XDIMessage.StatusWord, XDIMessage.PaddedFs)
 		# Filter related messages
 		"Filter estimate"
+		mOrientationQuat = self.getMtiConfigBytes(XDIMessage.OrientationQuat, rate_imu_period)
 		mOrientation = self.getMtiConfigBytes(XDIMessage.Orientation,rate_imu_period)
 		mVelocity = self.getMtiConfigBytes(XDIMessage.Velocity,rate_imu_period)
 		mPosition = self.getMtiConfigBytes(XDIMessage.PositionLatLon,rate_imu_period)
@@ -443,39 +444,39 @@ class MTDevice(object):
 			print "MTi-G-700/710 (GNSS/INS) device detected"
 			if mtiMode == 1:
 				print "Enabled publishing all sensor data"
-				data = mPc+mStf+mImuDq+mImuDv+mImuMag+mImuP+mGnssPvt+mGnssSat+mSw
+				data = mStf+mImuDq+mImuDv+mImuMag+mImuP+mGnssPvt+mGnssSat+mSw+mOrientationQuat
 			elif mtiMode == 2:
 				print "Enabled publishing all sensor data (rate quantities)"
-				data = mPc+mStf+mImuGyr+mImuAcc+mImuMag+mImuP+mGnssPvt+mGnssSat+mSw
+				data = mStf+mImuGyr+mImuAcc+mImuMag+mImuP+mGnssPvt+mGnssSat+mSw+mOrientationQuat
 			elif mtiMode == 3:
 				print "Enabled publishing all filter estimates"
-				data = mPc+mStf+mSw+mOrientation+mVelocity+mPosition+mHeight
+				data = mStf+mSw+mOrientation+mVelocity+mPosition+mHeight
 			else:
 				raise MTException("unknown mtiMode: (%d)."%	(mtiMode))			
 		elif (deviceID[0:4] == '0x17') | (deviceID[0:4] == '0x27') | (deviceID[0:4] == '0x37'):
 			print "MTi-100/200/300 device detected."
 			if mtiMode == 1:
 				print "Enabled publishing all sensor data"
-				data = mPc+mStf+mImuDq+mImuDv+mImuMag+mImuP+mSw
+				data = mStf+mImuDq+mImuDv+mImuMag+mImuP+mSw+mOrientationQuat
 			elif mtiMode == 2:
 				print "Enabled publishing all sensor data (rate quantities)"
-				data = mPc+mStf+mImuGyr+mImuAcc+mImuMag+mImuP+mSw
+				data = mStf+mImuGyr+mImuAcc+mImuMag+mImuP+mSw+mOrientationQuat
 			elif mtiMode == 3:
 				print "Enabled publishing all filter estimates"
-				data = mPc+mStf+mSw+mOrientation
+				data = mStf+mSw+mOrientation
 			else:
 				raise MTException("unknown mtiMode: (%d)."%	(mtiMode))
 		elif (deviceID[0:4] == '0x16') | (deviceID[0:4] == '0x26') | (deviceID[0:4] == '0x36'):
 			print "MTi-10/20/30 device detected"
 			if mtiMode == 1:
 				print "Enabled publishing all sensor data"
-				data = mPc+mStf+mImuDq+mImuDv+mImuMag+mSw
+				data = mStf+mImuDq+mImuDv+mImuMag+mSw+mOrientationQuat
 			elif mtiMode == 2:
 				print "Enabled publishing all sensor data (rate quantities)"
-				data = mPc+mStf+mImuGyr+mImuAcc+mImuMag+mSw
+				data = mStf+mImuGyr+mImuAcc+mImuMag+mSw+mOrientationQuat
 			elif mtiMode == 3:
 				print "Enabled publishing all filter estimates"
-				data = mPc+mStf+mSw+mOrientation
+				data = mStf+mSw+mOrientation
 			else:
 				raise MTException("unknown mtiMode: (%d)."%	(mtiMode))
 		else:
@@ -717,17 +718,17 @@ class MTDevice(object):
 				elif group == XDIGroup.Position:
 					temp, dataFlagPos = parse_position(data_id, content, ffmt)
 					if dataFlagPos:
-						output['height'] = temp
+						output['Altitude'] = temp
 					else:
-						output['pos'] = temp
+						output['Latlon'] = temp
 				elif group == XDIGroup.AngularVelocity:
 					output['Angular Velocity'] = parse_angular_velocity(data_id, content, ffmt)
 				elif group == XDIGroup.GNSS:
 					temp, dataFlagGnss = parse_GNSS(data_id, content, ffmt)
 					if dataFlagGnss:
-						output['GNSSPVT'] = temp
+						output['Gnss PVT'] = temp
 					else:
-						output['GNSSSATINFO'] = temp
+						output['Gnss SATINFO'] = temp
 				elif group == XDIGroup.SensorComponentReadout:
 					output['SCR'] = parse_SCR(data_id, content, ffmt)
 				elif group == XDIGroup.AnalogIn:

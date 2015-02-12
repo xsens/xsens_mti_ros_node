@@ -223,6 +223,7 @@ class XDIMessage:
 	PositionHeight			= 0x00005020 # Ellipsoidal height
 	Velocity 				= 0x0000D010 # Velocity in ENU
 	Orientation				= 0x00002030 # Euler orientation ENU
+	OrientationQuat			= 0x00002010 # Quaternion orientation ENU
 	
 
 class MTException(Exception):
