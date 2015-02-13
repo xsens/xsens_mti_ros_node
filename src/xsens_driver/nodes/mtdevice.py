@@ -598,7 +598,7 @@ class MTDevice(object):
 			if (data_id&0x00F0) == 0x40:	# LatLon
 				o['lat'], o['lon'] = struct.unpack('!'+2*ffmt, content)				
 			elif (data_id&0x00F0) == 0x20:	# Altitude Ellipsoid
-				o['ellipsoid'] = struct.unpack('!'+ffmt, content)
+				o['ellipsoid'] = struct.unpack('!'+1*ffmt, content)
 				heightFlag = True
 			else:
 				raise MTException("unknown packet: 0x%04X."%data_id)
@@ -619,14 +619,14 @@ class MTDevice(object):
 			o = {}
 			pvtFlag = False
 			if (data_id&0x00F0) == 0x10:	# GNSS PVT DATA
-				o['iTOW'],x1,x2,x3,x4,x5,x6,x7,x8,x9,fix,flag,nSv,x10,lon,lat,h,a,hAcc, \
-				vAcc,vN,vE,vD,x11,x12,sAcc,x13,x14,gDop,pDop,tDop,vDop,hDop,nDop,eDop = \
+				o['iTOW'],x1,x2,x3,x4,x5,x6,x7,x8,x9,o['fix'],o['flag'],o['nSat'],x10,lon,lat,h,a,hAcc, \
+				vAcc,vN,vE,vD,x11,x12,sAcc,headAcc,headVeh,gDop,pDop,tDop,vDop,hDop,nDop,eDop = \
 						struct.unpack('!LHBBBBBBLiBBBBiiiiLLiiiiiLLIHHHHHHH', content)
 				o['lat'], o['lon'], o['hEll'], o['hMsl'], o['velN'], o['velE'], o['velD'], \
 				o['horzAcc'], o['vertAcc'], o['speedAcc'], o['GDOP'],  o['PDOP'],  o['TDOP'],\
-				o['VDOP'], o['HDOP'], o['NDOP'], o['EDOP'] = 1e-7*lat, 1e-7*lon, 1e-3*h, \
-						1e-3*a, 1e-3*vN, 1e-3*vE, 1e-3*vD, 1e-3*hAcc, 1e-3*vAcc, sAcc, 1e-2*gDop, \
-						1e-2*pDop, 1e-2*tDop, 1e-2*vDop, 1e-2*hDop, 1e-2*nDop, 1e-2*eDop 
+				o['VDOP'], o['HDOP'], o['NDOP'], o['EDOP'], o['heading'], o['headingAcc'] = 1e-7*lat, 1e-7*lon, 1e-3*h, \
+						1e-3*a, 1e-3*vN, 1e-3*vE, 1e-3*vD, 1e-3*hAcc, 1e-3*vAcc, 1e-3*sAcc, 1e-2*gDop, \
+						1e-2*pDop, 1e-2*tDop, 1e-2*vDop, 1e-2*hDop, 1e-2*nDop, 1e-2*eDop, 1e-5*headVeh, 1e-5*headAcc
 				pvtFlag = True
 			elif (data_id&0x00F0) == 0x20:	# GNSS SAT Info
 				o['iTOW'], o['numCh'] = struct.unpack('!LBxxx', content[:8])

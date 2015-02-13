@@ -47,8 +47,14 @@ add_message_files(
    XsensQuaternion.msg
    ImuSensorSample.msg
    BaroSensorSample.msg   
+   GnssSensorSample.msg
    Internal.msg
-   sensorSample.msg   
+   sensorSample.msg
+   baroSample.msg
+   gnssSample.msg
+   orientationEstimate.msg
+   velocityEstimate.msg
+   positionEstimate.msg		   
  )
 
 ## Generate services in the 'srv' folder

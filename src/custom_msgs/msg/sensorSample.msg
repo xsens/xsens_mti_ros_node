@@ -12,6 +12,6 @@
 # If you are interpreting this message, please check for a value of -1 in the first element of each 
 # covariance matrix, and disregard the associated estimate.
 
-std_msgs/Time time
+Header header
 
 Internal internal

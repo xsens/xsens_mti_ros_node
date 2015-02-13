@@ -18,3 +18,5 @@ geometry_msgs/Vector3 mag
 
 BaroSensorSample baro
 
+GnssSensorSample gnss
+

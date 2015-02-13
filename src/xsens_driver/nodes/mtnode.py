@@ -11,7 +11,8 @@ from sensor_msgs.msg import Imu
 from geometry_msgs.msg import TwistStamped, Vector3Stamped, QuaternionStamped
 from gps_common.msg import GPSFix, GPSStatus
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus, KeyValue
-from custom_msgs.msg import sensorSample
+from custom_msgs.msg import sensorSample, baroSample, gnssSample
+from custom_msgs.msg import positionEstimate, velocityEstimate, orientationEstimate
 
 # transform Euler angles or matrix into quaternions
 from math import pi, radians
@@ -90,15 +91,15 @@ class XSensDriver(object):
 				message='No status information')
 		self.diag_msg.status = [self.stest_stat, self.xkf_stat, self.gps_stat]
 
-		self.imu_pub = rospy.Publisher('imu/data', Imu, queue_size=10) #IMU message
-		self.ss_pub = rospy.Publisher('xsens/sensorSample', sensorSample, queue_size=10) # sensorSample
-		self.mag_pub = rospy.Publisher('magnetic', Vector3Stamped, queue_size=10) # magnetic
-		self.baro_pub = rospy.Publisher('pressure', Float64, queue_size=10) # baro
-		self.gnssPvt_pub = rospy.Publisher('fix', GPSFix, queue_size=10) # GNSS PVT
-		self.gnssSatinfo_pub = rospy.Publisher('fix_extended', GPSStatus, queue_size=10) # GNSS SATINFO
-		self.ori_pub = rospy.Publisher('orientation', Vector3Stamped, queue_size=10) # XKF/XEE orientation
-		self.vel_pub = rospy.Publisher('velocity', Vector3Stamped, queue_size=10) # XKF/XEE velocity
-		self.pos_pub = rospy.Publisher('position', Vector3Stamped, queue_size=10) # XKF/XEE position
+		self.imu_pub = rospy.Publisher('mti/sensor/imu', Imu, queue_size=10) #IMU message
+		self.ss_pub = rospy.Publisher('mti/sensor/sample', sensorSample, queue_size=10) # sensorSample
+		self.mag_pub = rospy.Publisher('mti/sensor/magnetic', Vector3Stamped, queue_size=10) # magnetic
+		self.baro_pub = rospy.Publisher('mti/sensor/pressure', baroSample, queue_size=10) # baro
+		self.gnssPvt_pub = rospy.Publisher('mti/sensor/gnssPvt', gnssSample, queue_size=10) # GNSS PVT
+		#self.gnssSatinfo_pub = rospy.Publisher('mti/sensor/gnssStatus', GPSStatus, queue_size=10) # GNSS SATINFO
+		self.ori_pub = rospy.Publisher('mti/filter/orientation', orientationEstimate, queue_size=10) # XKF/XEE orientation
+		self.vel_pub = rospy.Publisher('mti/filter/velocity', velocityEstimate, queue_size=10) # XKF/XEE velocity
+		self.pos_pub = rospy.Publisher('mti/filter/position', positionEstimate, queue_size=10) # XKF/XEE position
 		
 		self.temp_pub = rospy.Publisher('temperature', Float32, queue_size=10)	# decide type
 		
@@ -116,6 +117,14 @@ class XSensDriver(object):
 
 	def spin_once(self):
 		
+		def baroPressureToHeight(value):
+			c1 = 44330.0
+			c2 = 9.869232667160128300024673081668e-6
+			c3 = 0.1901975534856
+			intermediate = 1-math.pow(c2*value, c3)
+			height = c1*intermediate
+			return height
+		
 		# get data
 		data = self.mt.read_measurement()
 		# common header
@@ -124,7 +133,7 @@ class XSensDriver(object):
 		h.frame_id = self.frame_id
 
 		# get data (None if not present)
-		temp = data.get('Temp')	# float
+		#temp = data.get('Temp')	# float
 		orient_data = data.get('Orientation Data')
 		velocity_data = data.get('Velocity')
 		position_data = data.get('Latlon')
@@ -134,7 +143,7 @@ class XSensDriver(object):
 		mag_data = data.get('Magnetic')
 		pressure_data = data.get('Pressure')
 		time_data = data.get('Timestamp')
-		#rawgnss_data = data.get('RAWGPS')
+		gnss_data = data.get('Gnss PVT')
 		status = data.get('Status')	# int
 
 		# create messages and default values
@@ -148,23 +157,23 @@ class XSensDriver(object):
 		mag_msg = Vector3Stamped()
 		pub_mag = False
 		"Baro in meters"
-		baro_msg = Float64()
+		baro_msg = baroSample()
 		pub_baro = False
 		"GNSS message supported only with MTi-G-7xx devices"
 		"Valid only for modes 1 and 2"
-		gnssPvt_msg = GPSFix()
-		pub_gpsPvt = False
-		gnssSatinfo_msg = GPSStatus()
-		pub_gnssSatinfo = False		
+		gnssPvt_msg = gnssSample()
+		pub_gnssPvt = False
+		#gnssSatinfo_msg = GPSStatus()
+		#pub_gnssSatinfo = False		
 		# All filter related outputs
 		"Supported in mode 3"
-		ori_msg = Vector3Stamped()
+		ori_msg = orientationEstimate()
 		pub_ori = False
 		"Supported in mode 3 for MTi-G-7xx devices"
-		vel_msg = Vector3Stamped()
+		vel_msg = velocityEstimate()
 		pub_vel = False
 		"Supported in mode 3 for MTi-G-7xx devices"
-		pos_msg = Vector3Stamped()
+		pos_msg = positionEstimate()
 		pub_pos = False
 		
 		secs = 0
@@ -181,18 +190,12 @@ class XSensDriver(object):
 				pub_ss = True
 				ss_msg.internal.imu.dv.x = acc_data['Delta v.x']
 				ss_msg.internal.imu.dv.y = acc_data['Delta v.y']
-				ss_msg.internal.imu.dv.z = acc_data['Delta v.z']
-				#all time assignments
-				ss_msg.time.data.secs = secs
-				ss_msg.time.data.nsecs = nsecs									
+				ss_msg.internal.imu.dv.z = acc_data['Delta v.z']											
 			elif 'accX' in acc_data: # found acceleration
 				pub_imu = True
 				imu_msg.linear_acceleration.x = acc_data['accX']
 				imu_msg.linear_acceleration.y = acc_data['accY']
-				imu_msg.linear_acceleration.z = acc_data['accZ']
-				#all time assignments
-				imu_msg.header.stamp.secs = secs
-				imu_msg.header.stamp.nsecs = nsecs				
+				imu_msg.linear_acceleration.z = acc_data['accZ']						
 			else:
 				raise MTException("Unsupported message in XDI_AccelerationGroup.")	
 					
@@ -216,30 +219,34 @@ class XSensDriver(object):
 			ss_msg.internal.mag.x = mag_msg.vector.x = mag_data['magX']
 			ss_msg.internal.mag.y = mag_msg.vector.y = mag_data['magY']
 			ss_msg.internal.mag.z = mag_msg.vector.z = mag_data['magZ']
-			pub_mag = True						
-			#all time assignments	
-			mag_msg.header.stamp.secs = secs
-			mag_msg.header.stamp.nsecs = nsecs		
-
-			# to fix
-		#if rawgps_data:
-		#	if rawgps_data['bGPS']<self.old_bGPS:
-		#		pub_gps = True
-		#		# LLA
-		#		xgps_msg.latitude = gps_msg.latitude = rawgps_data['LAT']*1e-7
-		#		xgps_msg.longitude = gps_msg.longitude = rawgps_data['LON']*1e-7
-		#		xgps_msg.altitude = gps_msg.altitude = rawgps_data['ALT']*1e-3
-				# NED vel # TODO?
-				# Accuracy
-				# 2 is there to go from std_dev to 95% interval
-		#		xgps_msg.err_horz = 2*rawgps_data['Hacc']*1e-3
-		#		xgps_msg.err_vert = 2*rawgps_data['Vacc']*1e-3
-		#	self.old_bGPS = rawgps_data['bGPS']
-		if temp is not None:
-			pub_temp = True
-			temp_msg.data = temp
-				
+			pub_mag = True
+			
+		if pressure_data:
+			pub_baro = True
+			height = baroPressureToHeight(pressure_data['Pressure'])
+			baro_msg.height = ss_msg.internal.baro.height = height
 		
+		if gnss_data:
+			pub_gnssPvt = True
+			gnssPvt_msg.itow = gnss_data['iTOW']
+			gnssPvt_msg.fix = gnss_data['fix']			
+			gnssPvt_msg.latitude = gnss_data['lat']
+			gnssPvt_msg.longitude = gnss_data['lon']
+			gnssPvt_msg.hEll = gnss_data['hEll']
+			gnssPvt_msg.hMsl = gnss_data['hMsl']
+			gnssPvt_msg.vel.x = gnss_data['velE']
+			gnssPvt_msg.vel.y = gnss_data['velN']
+			gnssPvt_msg.vel.z = -gnss_data['velD']
+			gnssPvt_msg.hAcc = gnss_data['horzAcc']
+			gnssPvt_msg.vAcc = gnss_data['vertAcc']
+			gnssPvt_msg.sAcc = gnss_data['speedAcc']
+			gnssPvt_msg.pDop = gnss_data['PDOP']
+			gnssPvt_msg.hDop = gnss_data['HDOP']
+			gnssPvt_msg.vDop = gnss_data['VDOP']
+			gnssPvt_msg.numSat = gnss_data['nSat']
+			gnssPvt_msg.heading = gnss_data['heading']
+			gnssPvt_msg.headingAcc = gnss_data['headingAcc']
+
 		if orient_data:
 			if 'Q0' in orient_data:
 				pub_imu = True
@@ -249,34 +256,27 @@ class XSensDriver(object):
 				imu_msg.orientation.w = orient_data['Q3']
 			elif 'Roll' in orient_data:
 				pub_ori = True
-				ori_msg.vector.x = orient_data['Roll']
-				ori_msg.vector.y = orient_data['Pitch']
-				ori_msg.vector.z = orient_data['Yaw']
-				#all time assignments
-				ori_msg.header.stamp.secs = secs
-				ori_msg.header.stamp.nsecs = nsecs
+				ori_msg.roll = orient_data['Roll']
+				ori_msg.pitch = orient_data['Pitch']
+				ori_msg.yaw = orient_data['Yaw']				
 			else:
 				raise MTException('Unsupported message in XDI_OrientationGroup')
 
 		if velocity_data:
 			pub_vel = True
-			vel_msg.vector.x = velocity_data['velX']
-			vel_msg.vector.y = velocity_data['velY']
-			vel_msg.vector.z = velocity_data['velZ']
-			#all time assignments
-			vel_msg.header.stamp.secs = secs
-			vel_msg.header.stamp.nsecs = nsecs
-							
+			vel_msg.velE = velocity_data['velX']
+			vel_msg.velN = velocity_data['velY']
+			vel_msg.velU = velocity_data['velZ']
+										
 		if position_data:
 			pub_pos = True
-			pos_msg.vector.x = position_data['lat']
-			pos_msg.vector.y = position_data['lon']
-			#all time assignments
-			pos_msg.header.stamp.secs = secs
-			pos_msg.header.stamp.nsecs = nsecs
+			pos_msg.latitude = position_data['lat']
+			pos_msg.longitude = position_data['lon']
+			
 		if altitude_data:
 			pub_pos = True	
-			pos_msg.vector.z = altitude_data['ellipsoid']
+			tempData = altitude_data['ellipsoid']
+			pos_msg.hEll = tempData[0]
 			
 		#if status is not None:
 		#	if status & 0b0001:
@@ -300,24 +300,14 @@ class XSensDriver(object):
 		#	self.diag_msg.header = h
 		#	self.diag_pub.publish(self.diag_msg)
 
-		#	if pub_gps:
-		#		if status & 0b0100:
-		#			gps_msg.status.status = NavSatStatus.STATUS_FIX
-		#			xgps_msg.status.status = GPSStatus.STATUS_FIX
-		#			gps_msg.status.service = NavSatStatus.SERVICE_GPS
-		#			xgps_msg.status.position_source = 0b01101001
-		#			xgps_msg.status.motion_source = 0b01101010
-		#			xgps_msg.status.orientation_source = 0b01101010
-		#		else:
-		#			gps_msg.status.status = NavSatStatus.STATUS_NO_FIX
-		#			xgps_msg.status.status = GPSStatus.STATUS_NO_FIX
-		#			gps_msg.status.service = 0
-		#			xgps_msg.status.position_source = 0b01101000
-		#			xgps_msg.status.motion_source = 0b01101000
-		#			xgps_msg.status.orientation_source = 0b01101000
+		
 		# publish available information
 		if pub_imu:
 			imu_msg.header = h
+			#all time assignments (overwriting ROS time)
+			# Comment the two lines below if you need ROS time
+			imu_msg.header.stamp.secs = secs
+			imu_msg.header.stamp.nsecs = nsecs	
 			self.imu_pub.publish(imu_msg)
 		#if pub_gps:
 		#	xgps_msg.header = gps_msg.header = h
@@ -329,15 +319,46 @@ class XSensDriver(object):
 		#if pub_temp:
 		#	self.temp_pub.publish(temp_msg)
 		if pub_ss:
+			ss_msg.header = h
+			#all time assignments (overwriting ROS time)
+			# Comment the two lines below if you need ROS time
+			ss_msg.header.stamp.secs = secs
+			ss_msg.header.stamp.nsecs = nsecs	
 			self.ss_pub.publish(ss_msg)
+		if pub_baro:
+			baro_msg.header = h
+			#all time assignments (overwriting ROS time)
+			# Comment the two lines below if you need ROS time
+			baro_msg.header.stamp.secs = secs
+			baro_msg.header.stamp.nsecs = nsecs	
+			self.baro_pub.publish(baro_msg)
+		if pub_gnssPvt:
+			gnssPvt_msg.header = h
+			#all time assignments (overwriting ROS time)
+			# Comment the two lines below if you need ROS time
+			baro_msg.header.stamp.secs = secs
+			baro_msg.header.stamp.nsecs = nsecs	
+			self.gnssPvt_pub.publish(gnssPvt_msg)										
 		if pub_ori:
 			ori_msg.header = h
+			#all time assignments (overwriting ROS time)
+			# Comment the two lines below if you need ROS time
+			ori_msg.header.stamp.secs = secs
+			ori_msg.header.stamp.nsecs = nsecs	
 			self.ori_pub.publish(ori_msg)
 		if pub_vel:
 			vel_msg.header = h
+			#all time assignments (overwriting ROS time)
+			# Comment the two lines below if you need ROS time
+			vel_msg.header.stamp.secs = secs
+			vel_msg.header.stamp.nsecs = nsecs	
 			self.vel_pub.publish(vel_msg)
 		if pub_pos:
 			pos_msg.header = h
+			#all time assignments (overwriting ROS time)
+			# Comment the two lines below if you need ROS time
+			pos_msg.header.stamp.secs = secs
+			pos_msg.header.stamp.nsecs = nsecs	
 			self.pos_pub.publish(pos_msg)		
 			
 

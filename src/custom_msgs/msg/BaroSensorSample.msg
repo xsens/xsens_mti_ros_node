@@ -1,8 +1,6 @@
-# This is a message to hold data from an IMU (Inertial Measurement Unit)
+# This is a message to hold data from a baro 
 
-std_msgs/Time T
-
-std_msgs/Float64 height
+float64 height
 
 
 
