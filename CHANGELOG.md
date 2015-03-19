@@ -1,5 +1,8 @@
 # Changelog for package xsens_mti_ros_node
 
+## 2.0.1 (2015-03-19)
+* Fix documentation, switch to Markdown
+
 ## 2.0.0 (2015-03-19)
 * Updated GNSS data identifiers
 * Fixed a timeout issue
