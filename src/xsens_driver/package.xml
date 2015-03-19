@@ -1,6 +1,6 @@
 <package>
   <name>xsens_driver</name>
-  <version>1.0.4</version>
+  <version>2.0.0</version>
   <description>
   ROS Driver for publishing sensorSample messsages (MTi-10/100 and MTi-G-700).
   </description>

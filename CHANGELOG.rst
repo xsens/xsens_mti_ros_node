@@ -1,6 +1,14 @@
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Changelog for package xsens_mti_ros_node
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2.0.0 (2015-03-19)
+-----------------
+* Updated GNSS data identifiers
+* Fixed a timeout issue
+* Added new message files
+* Add baudrate checks
+* Add filter options
+* Removed support for legacy devices
 
 1.0.0 (2014-09-02)
 -----------------
