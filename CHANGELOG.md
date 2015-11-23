@@ -1,5 +1,8 @@
 # Changelog for package xsens_mti_ros_node
 
+## 2.0.2 (2015-11-23)
+* Fix Readme
+
 ## 2.0.1 (2015-03-19)
 * Fix documentation, switch to Markdown
 
