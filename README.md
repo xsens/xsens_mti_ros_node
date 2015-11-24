@@ -38,7 +38,7 @@
 5. Open a new terminal, type
    ```sh
    $ . $CATKIN/devel/setup.bash
-   $ rosrun xsens_driver mtdevice.py -m $sm -f $fs # publish sensor data at 100Hz using sensor mode 1
+   $ rosrun xsens_driver mtdevice.py -m $sm -f $fs # publish sensor data
    ```
    where $fs can be 1,5,10,20,40,50,80,100,200 or 400Hz. This configures the MTi
    to output inertial data and magnetometer data at the set ODR. The maximum
