@@ -250,10 +250,10 @@ class XSensDriver(object):
 		if orient_data:
 			if 'Q0' in orient_data:
 				pub_imu = True
-				imu_msg.orientation.x = orient_data['Q0']
-				imu_msg.orientation.y = orient_data['Q1']
-				imu_msg.orientation.z = orient_data['Q2']
-				imu_msg.orientation.w = orient_data['Q3']
+				imu_msg.orientation.w = orient_data['Q0']
+				imu_msg.orientation.x = orient_data['Q1']
+				imu_msg.orientation.y = orient_data['Q2']
+				imu_msg.orientation.z = orient_data['Q3']
 			elif 'Roll' in orient_data:
 				pub_ori = True
 				ori_msg.roll = orient_data['Roll']
