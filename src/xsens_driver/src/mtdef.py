@@ -124,7 +124,7 @@ class MID:
 	SetNoRotation = 0x22
 	
 	## Some timeout related stuff
-	additionalTimeOutOffset = 0.006 # 6ms
+	additionalTimeOutOffset = 0.010 # 6ms
 
 
 def getName(cls, value):
@@ -205,6 +205,7 @@ class XDIMessage:
 	SampleTimeFine			= 0x00001060
 	DeltaV					= 0x00004010 
 	DeltaVFs				= 0x00000190 # 400Hz
+	FsModule				= 0x00000064 # 100Hz for 1-series and FMT1000 series
 	Acceleration			= 0x00004020
 	AccelerationFs 			= 0x00000190 # 400Hz
 	DeltaQ					= 0x00008030
@@ -224,6 +225,15 @@ class XDIMessage:
 	Velocity 				= 0x0000D010 # Velocity in ENU
 	Orientation				= 0x00002030 # Euler orientation ENU
 	OrientationQuat			= 0x00002010 # Quaternion orientation ENU
+
+class XDIProductMask:
+	"""Product masks for the Xsens MTi series devices."""
+	FMT1000Series			= "c" # 0x0C
+	MTi1Series				= "8" # 0x08
+	MTi10Series				= "6" # 0x06
+	MTi100Series			= "7" # 0x07
+	MTi700Device			= "7" # this is a subset of the 100-series 
+	
 	
 
 class MTException(Exception):

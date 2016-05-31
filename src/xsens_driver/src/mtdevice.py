@@ -4,7 +4,7 @@ import struct
 
 import sys, getopt, time, glob, math, pdb, numpy
 
-from mtdef import MID, MTException, Baudrates, XDIGroup, getName, getMIDName, XDIMessage
+from mtdef import MID, MTException, Baudrates, XDIGroup, getName, getMIDName, XDIMessage, XDIProductMask
 
 # Verbose flag for debugging
 verbose = False
@@ -394,7 +394,9 @@ class MTDevice(object):
 			masterID = struct.unpack('!L', dataDID)
 		except struct.error:
 			raise MTException("could not parse configuration.")
-		deviceID = hex(masterID[0]&0x0ff00000)
+		# to have a clear distinction between MTi-G-700 and 100-series devices
+		deviceIDProductMask = hex(masterID[0]&0x00f00000)
+		deviceTypeMask = hex(masterID[0]&0x0f000000)
 		# check for user input for the delta q and delta v quantities
 		new_imu_period = XDIMessage.DeltaQFs 
 		if mtiSampleRate < int(new_imu_period):
@@ -413,6 +415,10 @@ class MTDevice(object):
 		if mtiSampleRate < int(new_pressure_period):
 			new_pressure_period = mtiSampleRate
 		
+		if (deviceIDProductMask[2] == XDIProductMask.MTi1Series) | (deviceIDProductMask[2] == XDIProductMask.FMT1000Series):
+			new_imu_period = rate_imu_period = new_mag_period = XDIMessage.FsModule
+			if mtiSampleRate < int(new_imu_period):
+				new_imu_period = rate_imu_period = new_mag_period = mtiSampleRate
 		# All messages with corresponding output data rates
 		"Packet couter, SampleTimeFine"
 		# mPc = self.getMtiConfigBytes(XDIMessage.PacketCounter, XDIMessage.PaddedFs)
@@ -440,8 +446,8 @@ class MTDevice(object):
 		mHeight = self.getMtiConfigBytes(XDIMessage.PositionHeight,rate_imu_period)	
 		
 		# Output configuration set based on the product ID and user specification	
-		if deviceID[0:4] == '0x77':
-			print "MTi-G-700/710 (GNSS/INS) device detected"
+		if (deviceIDProductMask[2] == XDIProductMask.MTi100Series) & (deviceTypeMask[2] == XDIProductMask.MTi700Device):
+			print "MTi-G-700/710 (GNSS/INS) device detected."
 			if mtiMode == 1:
 				print "Enabled publishing all sensor data"
 				data = mStf+mImuDq+mImuDv+mImuMag+mImuP+mGnssPvt+mGnssSat+mSw+mOrientationQuat
@@ -453,7 +459,7 @@ class MTDevice(object):
 				data = mStf+mSw+mOrientation+mVelocity+mPosition+mHeight
 			else:
 				raise MTException("unknown mtiMode: (%d)."%	(mtiMode))			
-		elif (deviceID[0:4] == '0x17') | (deviceID[0:4] == '0x27') | (deviceID[0:4] == '0x37'):
+		elif deviceIDProductMask[2] == XDIProductMask.MTi100Series:
 			print "MTi-100/200/300 device detected."
 			if mtiMode == 1:
 				print "Enabled publishing all sensor data"
@@ -466,7 +472,7 @@ class MTDevice(object):
 				data = mStf+mSw+mOrientation
 			else:
 				raise MTException("unknown mtiMode: (%d)."%	(mtiMode))
-		elif (deviceID[0:4] == '0x16') | (deviceID[0:4] == '0x26') | (deviceID[0:4] == '0x36'):
+		elif deviceIDProductMask[2] == XDIProductMask.MTi10Series:
 			print "MTi-10/20/30 device detected"
 			if mtiMode == 1:
 				print "Enabled publishing all sensor data"
@@ -479,6 +485,32 @@ class MTDevice(object):
 				data = mStf+mSw+mOrientation
 			else:
 				raise MTException("unknown mtiMode: (%d)."%	(mtiMode))
+		elif deviceIDProductMask[2] == XDIProductMask.MTi1Series:
+			print "MTi-1/2/3 device detected"
+			if mtiMode == 1:
+				print "Enabled publishing all sensor data"
+				data = mStf+mImuDq+mImuDv+mImuMag+mSw+mOrientationQuat
+			elif mtiMode == 2:
+				print "Enabled publishing all sensor data (rate quantities)"
+				data = mStf+mImuGyr+mImuAcc+mImuMag+mSw+mOrientationQuat
+			elif mtiMode == 3:
+				print "Enabled publishing all filter estimates"
+				data = mStf+mSw+mOrientation
+			else:
+				raise MTException("unknown mtiMode: (%d)."%	(mtiMode))
+		elif deviceIDProductMask[2] == XDIProductMask.FMT1000Series:
+			print "FMT-1010/1020/1030 device detected"
+			if mtiMode == 1:
+				print "Enabled publishing all sensor data"
+				data = mStf+mImuDq+mImuDv+mImuMag+mSw+mOrientationQuat
+			elif mtiMode == 2:
+				print "Enabled publishing all sensor data (rate quantities)"
+				data = mStf+mImuGyr+mImuAcc+mImuMag+mSw+mOrientationQuat
+			elif mtiMode == 3:
+				print "Enabled publishing all filter estimates"
+				data = mStf+mSw+mOrientation
+			else:
+				raise MTException("unknown mtiMode: (%d)."%	(mtiMode))	
 		else:
 			raise MTException("Unknown device")
 		
