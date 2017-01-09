@@ -60,7 +60,7 @@ class XSensDriver(object):
 		rospy.loginfo("MT node interface: %s at %d bd."%(device, baudrate))
 		self.mt = mtdevice.MTDevice(device, baudrate)
 
-		self.frame_id = get_param('~frame_id', '/mti/data')
+		self.frame_id = get_param('~frame_id', 'mti/data')
 
 		frame_local     = get_param('~frame_local'    , 'ENU')
 		frame_local_imu = get_param('~frame_local_imu', 'ENU')
