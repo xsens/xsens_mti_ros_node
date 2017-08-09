@@ -20,7 +20,7 @@ class MTDevice(object):
 			config_mode=False):
 		"""Open device."""
 		self.device = serial.Serial(port, baudrate, timeout=timeout,
-				writeTimeout=timeout)
+				writeTimeout=timeout, rtscts=True, dsrdtr=True)
 		self.device.flushInput()	# flush to make sure the port is ready TODO
 		self.device.flushOutput()	# flush to make sure the port is ready TODO
 		## timeout for communication
