@@ -364,7 +364,7 @@ class XSensDriver(object):
 
 def main():
 	'''Create a ROS node and instantiate the class.'''
-	rospy.init_node('xsens_driver')
+	rospy.init_node('xsens_driver', anonymous=True, log_level=rospy.WARN)
 	driver = XSensDriver()
 	driver.spin()
 

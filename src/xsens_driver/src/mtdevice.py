@@ -2,7 +2,7 @@
 import serial
 import struct
 
-import sys, getopt, time, glob, math, pdb, numpy
+import sys, getopt, time, glob, math, pdb, numpy, rospy
 
 from mtdef import MID, MTException, Baudrates, XDIGroup, getName, getMIDName, XDIMessage, XDIProductMask
 
@@ -131,13 +131,13 @@ class MTDevice(object):
 			def waitfor(size=1):
 				while self.device.inWaiting() < size:
 					if time.time()-new_start >= self.timeout:
-						raise MTException("timeout waiting for message.")
+						rospy.logwarn("timeout waiting for message")
 
 			c = self.device.read()
 			while (not c) and ((time.time()-new_start)<self.timeout):
 				c = self.device.read()
 			if not c:
-				raise MTException("timeout waiting for message.")
+				rospy.logwarn("timeout waiting for message")
 			if ord(c)<>0xFA:
 				continue
 			# second part of preamble

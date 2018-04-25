@@ -1,5 +1,11 @@
 # Changelog for package xsens_mti_ros_node
 
+## 3.0.2 (2018-04-24)
+* Added warning (rospy.logwarn) for timeouts
+
+## 3.0.1 (2017-08-09)
+* Support added to the node for operation with Kinetic environment
+
 ## 3.0.0 (2016-05-27)
 * Added functionality to detect devices based on Product masks (incl. 1-series and FMT1000 devices)
 * Increased the 'additionalTimeOutOffset' from 6ms to 10ms as default
