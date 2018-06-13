@@ -1,0 +1,28 @@
+# Serial device
+device: /dev/ttyUSB0
+
+# Baudrate. If configure_on_startup is true, will set device to use baudrate
+baudrate: 230400
+
+# Frame id which is assigned to all sensor data messages
+frame_id: xsens
+
+# Will configure the device on startup
+configure_on_startup: true
+
+# Output data rate of device. Valid values: 1, 2, 4, 5, 10, 20, 40, 50, 80, 100, 200, 400
+odr: 40
+
+# xkf-scenario
+# general: 39
+# high_mag_dep: 40
+# dynamic: 41
+# low_mag_dep: 42
+# vru_general: 43 (only profile available for mti-20)
+xkf_scenario: 43
+
+# Output data mode
+# 1: sensor data
+# 2. sensor data w/ rate quantities
+# 3: filter estimates
+output_mode: 2

@@ -1,0 +1,6 @@
+<launch>
+    <node name="xsens_mti30" pkg="xsens_driver" type="mtnode.py">
+        <remap from="mti/sensor/imu" to="imu/data_raw"/>
+        <rosparam command="load" file="$(find xsens_driver)/config/xsens.yaml"/>
+    </node>
+</launch>

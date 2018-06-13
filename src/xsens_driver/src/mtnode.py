@@ -60,6 +60,24 @@ class XSensDriver(object):
 		rospy.loginfo("MT node interface: %s at %d bd."%(device, baudrate))
 		self.mt = mtdevice.MTDevice(device, baudrate)
 
+		configure_on_startup = get_param('~configure_on_startup', False)
+		odr = get_param('~odr', 40)
+		output_mode = get_param('~output_mode', 2)
+                xkf_scenario = get_param('~xkf_scenario', 43)
+
+		if configure_on_startup:
+			rospy.loginfo('Setting ODR (%d) and output mode (%d)' % (odr, output_mode))
+			if odr not in [1, 2, 5, 10, 20, 40, 50, 80, 10, 200, 400]:
+				raise Exception('Invalid ODR configuraton requested')
+			if output_mode not in [1, 2, 3]:
+				raise Exception('Invalid output mode requested')
+                        self.mt.configureMti(odr, output_mode)
+			self.mt.ChangeBaudrate(baudrate)
+                        self.mt.SetCurrentScenario(xkf_scenario)
+                        self.mt.GoToMeasurement()
+		else:
+			rospy.loginfo('Using saved odr and output configuration')
+
 		self.frame_id = get_param('~frame_id', 'mti/data')
 
 		frame_local     = get_param('~frame_local'    , 'ENU')
@@ -364,7 +382,7 @@ class XSensDriver(object):
 
 def main():
 	'''Create a ROS node and instantiate the class.'''
-	rospy.init_node('xsens_driver', anonymous=True, log_level=rospy.WARN)
+	rospy.init_node('xsens_driver', anonymous=True, log_level=rospy.INFO)
 	driver = XSensDriver()
 	driver.spin()
 
