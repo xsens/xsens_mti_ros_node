@@ -30,22 +30,17 @@
    . $CATKIN/devel/setup.bash
    ```
 
-4. Initiate the ros core
-   ```sh
-   $ roscore
-   ```
-
-5. Edit the config file to match your specific use case:
+4. Edit the config file to match your specific use case:
    ```sh
    rosed xsens_driver xsens.yaml
    ```
 
-6. To run the node
+5. To run the node
    ```sh
    $ roslaunch xsens_driver xsens.launch
    ```
 
-7. Open a new terminal (do not forget step 3)
+6. Open a new terminal (do not forget step 3)
    ```sh
    $ . $CATKIN/devel/setup.bash
    $ rostopic echo /mti/sensor/sample
