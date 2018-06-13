@@ -63,7 +63,7 @@ class XSensDriver(object):
 		configure_on_startup = get_param('~configure_on_startup', False)
 		odr = get_param('~odr', 40)
 		output_mode = get_param('~output_mode', 2)
-                xkf_scenario = get_param('~xkf_scenario', 43)
+		xkf_scenario = get_param('~xkf_scenario', 43)
 
 		if configure_on_startup:
 			rospy.loginfo('Setting ODR (%d) and output mode (%d)' % (odr, output_mode))
@@ -73,8 +73,8 @@ class XSensDriver(object):
 				raise Exception('Invalid output mode requested')
                         self.mt.configureMti(odr, output_mode)
 			self.mt.ChangeBaudrate(baudrate)
-                        self.mt.SetCurrentScenario(xkf_scenario)
-                        self.mt.GoToMeasurement()
+			self.mt.SetCurrentScenario(xkf_scenario)
+			self.mt.GoToMeasurement()
 		else:
 			rospy.loginfo('Using saved odr and output configuration')
 
