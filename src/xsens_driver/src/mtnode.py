@@ -11,8 +11,8 @@ from sensor_msgs.msg import Imu
 from geometry_msgs.msg import TwistStamped, Vector3Stamped, QuaternionStamped
 from gps_common.msg import GPSFix, GPSStatus
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus, KeyValue
-from custom_msgs.msg import sensorSample, baroSample, gnssSample
-from custom_msgs.msg import positionEstimate, velocityEstimate, orientationEstimate
+from xsens_msgs.msg import sensorSample, baroSample, gnssSample
+from xsens_msgs.msg import positionEstimate, velocityEstimate, orientationEstimate
 
 # transform Euler angles or matrix into quaternions
 from math import pi, radians
