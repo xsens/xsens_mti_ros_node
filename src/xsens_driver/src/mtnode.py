@@ -71,7 +71,7 @@ class XSensDriver(object):
 				raise Exception('Invalid ODR configuraton requested')
 			if output_mode not in [1, 2, 3]:
 				raise Exception('Invalid output mode requested')
-                        self.mt.configureMti(odr, output_mode)
+			self.mt.configureMti(odr, output_mode)
 			self.mt.ChangeBaudrate(baudrate)
 			self.mt.SetCurrentScenario(xkf_scenario)
 			self.mt.GoToMeasurement()
