@@ -30,32 +30,17 @@
    . $CATKIN/devel/setup.bash
    ```
 
-4. Initiate the ros core
+4. Edit the config file to match your specific use case:
    ```sh
-   $ roscore
+   rosed xsens_driver xsens.yaml
    ```
 
-5. Open a new terminal, type
+5. To run the node
    ```sh
-   $ . $CATKIN/devel/setup.bash
-   $ rosrun xsens_driver mtdevice.py -m $sm -f $fs # publish sensor data
-   ```
-   where $fs can be 1,5,10,20,40,50,80,100,200 or 400Hz. This configures the MTi
-   to output inertial data and magnetometer data at the set ODR. The maximum
-   supported inertial update rate is 400Hz and for the magnetometer it is 100Hz.
-   The $sm can be set to 1,2 or 3. This can be used to set the sensor to output
-   sensor data or filter outputs.
-
-6. To run the node
-   ```sh
-   $ rosrun xsens_driver mtnode.py _device:=/dev/ttyUSB0 _baudrate:=115200
-   ```
-   or
-   ```sh
-   $ rosrun xsens_driver mtnode.py 
+   $ roslaunch xsens_driver xsens.launch
    ```
 
-7. Open a new terminal (do not forget step 3)
+6. Open a new terminal (do not forget step 3)
    ```sh
    $ . $CATKIN/devel/setup.bash
    $ rostopic echo /mti/sensor/sample
