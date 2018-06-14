@@ -68,7 +68,7 @@ class XSensDriver(object):
 
 		if configure_on_startup:
 			rospy.loginfo('Setting ODR (%d) and output mode (%d)' % (odr, output_mode))
-			if odr not in [1, 2, 5, 10, 20, 40, 50, 80, 10, 200, 400]:
+			if odr not in [1, 2, 5, 10, 20, 40, 50, 80, 100, 200, 400]:
 				raise Exception('Invalid ODR configuraton requested')
 			if output_mode not in [1, 2, 3]:
 				raise Exception('Invalid output mode requested')
