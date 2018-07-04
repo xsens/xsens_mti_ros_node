@@ -1,0 +1,5 @@
+<launch>
+    <node name="xsens_mti" pkg="xsens_driver" type="mtnode.py">
+        <rosparam command="load" file="$(find xsens_driver)/config/xsens.yaml"/>
+    </node>
+</launch>

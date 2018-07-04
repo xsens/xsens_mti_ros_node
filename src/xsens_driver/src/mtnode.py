@@ -60,6 +60,25 @@ class XSensDriver(object):
 		rospy.loginfo("MT node interface: %s at %d bd."%(device, baudrate))
 		self.mt = mtdevice.MTDevice(device, baudrate)
 
+		configure_on_startup = get_param('~configure_on_startup', False)
+		odr = get_param('~odr', 40)
+		output_mode = get_param('~output_mode', 2)
+		xkf_scenario = get_param('~xkf_scenario', 43)
+		self.use_rostime = get_param('~use_rostime', False)
+
+		if configure_on_startup:
+			rospy.loginfo('Setting ODR (%d) and output mode (%d)' % (odr, output_mode))
+			if odr not in [1, 2, 5, 10, 20, 40, 50, 80, 100, 200, 400]:
+				raise Exception('Invalid ODR configuraton requested')
+			if output_mode not in [1, 2, 3]:
+				raise Exception('Invalid output mode requested')
+			self.mt.configureMti(odr, output_mode)
+			self.mt.ChangeBaudrate(baudrate)
+			self.mt.SetCurrentScenario(xkf_scenario)
+			self.mt.GoToMeasurement()
+		else:
+			rospy.loginfo('Using saved odr and output configuration')
+
 		self.frame_id = get_param('~frame_id', 'mti/data')
 
 		frame_local     = get_param('~frame_local'    , 'ENU')
@@ -304,10 +323,10 @@ class XSensDriver(object):
 		# publish available information
 		if pub_imu:
 			imu_msg.header = h
-			#all time assignments (overwriting ROS time)
-			# Comment the two lines below if you need ROS time
-			imu_msg.header.stamp.secs = secs
-			imu_msg.header.stamp.nsecs = nsecs	
+			if not self.use_rostime:
+				#all time assignments (overwriting ROS time)
+				imu_msg.header.stamp.secs = secs
+				imu_msg.header.stamp.nsecs = nsecs	
 			self.imu_pub.publish(imu_msg)
 		#if pub_gps:
 		#	xgps_msg.header = gps_msg.header = h
@@ -320,51 +339,51 @@ class XSensDriver(object):
 		#	self.temp_pub.publish(temp_msg)
 		if pub_ss:
 			ss_msg.header = h
-			#all time assignments (overwriting ROS time)
-			# Comment the two lines below if you need ROS time
-			ss_msg.header.stamp.secs = secs
-			ss_msg.header.stamp.nsecs = nsecs	
+			if not self.use_rostime:
+				#all time assignments (overwriting ROS time)
+				ss_msg.header.stamp.secs = secs
+				ss_msg.header.stamp.nsecs = nsecs	
 			self.ss_pub.publish(ss_msg)
 		if pub_baro:
 			baro_msg.header = h
-			#all time assignments (overwriting ROS time)
-			# Comment the two lines below if you need ROS time
-			baro_msg.header.stamp.secs = secs
-			baro_msg.header.stamp.nsecs = nsecs	
+			if not self.use_rostime:
+				#all time assignments (overwriting ROS time)
+				baro_msg.header.stamp.secs = secs
+				baro_msg.header.stamp.nsecs = nsecs	
 			self.baro_pub.publish(baro_msg)
 		if pub_gnssPvt:
 			gnssPvt_msg.header = h
-			#all time assignments (overwriting ROS time)
-			# Comment the two lines below if you need ROS time
-			baro_msg.header.stamp.secs = secs
-			baro_msg.header.stamp.nsecs = nsecs	
+			if not self.use_rostime:
+				#all time assignments (overwriting ROS time)
+				baro_msg.header.stamp.secs = secs
+				baro_msg.header.stamp.nsecs = nsecs	
 			self.gnssPvt_pub.publish(gnssPvt_msg)										
 		if pub_ori:
 			ori_msg.header = h
-			#all time assignments (overwriting ROS time)
-			# Comment the two lines below if you need ROS time
-			ori_msg.header.stamp.secs = secs
-			ori_msg.header.stamp.nsecs = nsecs	
+			if not self.use_rostime:
+				#all time assignments (overwriting ROS time)
+				ori_msg.header.stamp.secs = secs
+				ori_msg.header.stamp.nsecs = nsecs	
 			self.ori_pub.publish(ori_msg)
 		if pub_vel:
 			vel_msg.header = h
-			#all time assignments (overwriting ROS time)
-			# Comment the two lines below if you need ROS time
-			vel_msg.header.stamp.secs = secs
-			vel_msg.header.stamp.nsecs = nsecs	
+			if not self.use_rostime:
+				#all time assignments (overwriting ROS time)
+				vel_msg.header.stamp.secs = secs
+				vel_msg.header.stamp.nsecs = nsecs	
 			self.vel_pub.publish(vel_msg)
 		if pub_pos:
 			pos_msg.header = h
-			#all time assignments (overwriting ROS time)
-			# Comment the two lines below if you need ROS time
-			pos_msg.header.stamp.secs = secs
-			pos_msg.header.stamp.nsecs = nsecs	
+			if not self.use_rostime:
+				#all time assignments (overwriting ROS time)
+				pos_msg.header.stamp.secs = secs
+				pos_msg.header.stamp.nsecs = nsecs	
 			self.pos_pub.publish(pos_msg)		
 			
 
 def main():
 	'''Create a ROS node and instantiate the class.'''
-	rospy.init_node('xsens_driver', anonymous=True, log_level=rospy.WARN)
+	rospy.init_node('xsens_driver', anonymous=True, log_level=rospy.INFO)
 	driver = XSensDriver()
 	driver.spin()
 
