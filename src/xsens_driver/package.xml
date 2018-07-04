@@ -1,8 +1,8 @@
 <package>
   <name>xsens_driver</name>
-  <version>3.0.2</version>
+  <version>4.0.0</version>
   <description>
-  ROS Driver for publishing mti sensor sample messages (MTi 1-series, MTi 10-series and MTi 100-series incl. MTi-G-710).
+  ROS Driver for publishing mti sensor sample messages (MTi 1-series incl. MTi-7, MTi 10-series and MTi 100-series incl. MTi-G-710).
   </description>
   <maintainer email="support@xsens.com">Xsens</maintainer>
   <license>BSD</license>

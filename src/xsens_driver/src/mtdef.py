@@ -228,8 +228,8 @@ class XDIMessage:
 
 class XDIProductMask:
 	"""Product masks for the Xsens MTi series devices."""
-	FMT1000Series			= "c" # 0x0C
 	MTi1Series				= "8" # 0x08
+	MTi7Device				= "7" # 0x07
 	MTi10Series				= "6" # 0x06
 	MTi100Series			= "7" # 0x07
 	MTi700Device			= "7" # this is a subset of the 100-series 

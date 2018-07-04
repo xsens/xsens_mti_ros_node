@@ -1,5 +1,10 @@
 # Changelog for package xsens_mti_ros_node
 
+## 4.0.0 (2018-07-04)
+* Merge pull request #33: Change custom_msgs to xsens_msgs
+* Merge pull request #32: Configure MTi device on startup
+* Added support to MTi-7 device
+
 ## 3.0.2 (2018-04-24)
 * Added warning (rospy.logwarn) for timeouts
 

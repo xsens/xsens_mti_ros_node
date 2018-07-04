@@ -2,7 +2,7 @@
 device: /dev/ttyUSB0
 
 # Baudrate. If configure_on_startup is true, will set device to use baudrate
-baudrate: 230400
+baudrate: 115200
 
 # Frame id which is assigned to all sensor data messages
 frame_id: xsens
@@ -10,22 +10,25 @@ frame_id: xsens
 # Will configure the device on startup
 configure_on_startup: true
 
-# Output data rate of device. Valid values: 1, 2, 4, 5, 10, 20, 40, 50, 80, 100, 200, 400
-odr: 40
+# Output data rate of device. Valid values: 1, 2, 4, 5, 10, 20, 40, 50, 80, 100, 200, 400, 800
+# Refer to MT Low Level Communication Protocol  Documentation for supported ODRs for each MTi series
+# https://base.xsens.com/hc/en-us/articles/207003759-Online-links-to-manuals-from-the-MT-Software-Suite
+odr: 10
 
-# xkf-scenario
-# general: 39
-# high_mag_dep: 40
-# dynamic: 41
-# low_mag_dep: 42
-# vru_general: 43 (only profile available for mti-20)
-xkf_scenario: 43
+# Filter profiles (xkf-scenario)
+# MTi-2 [VRU_general:54]
+# MTi-2 [General:50, High_mag_dep:51, Dynamic:52, North_referenced:53, VRU_general:54] 
+# MTi-7 [General:11, GeneralNoBaro:12, GeneralMag:13]
+# MTi-20/200 [VRU_general: 43]
+# MTi-30/300 [General:39, High_map_dep:40, Dynamic:41, Low_mag_dep:42, VRU_general:43]
+# MTi-G-710 [General:1, GeneralNoBaro:2, GeneralMag:3, Automotive:4 HighPerformanceEDR:5)
+xkf_scenario: 11
 
 # Output data mode
 # 1: sensor data
 # 2. sensor data w/ rate quantities
 # 3: filter estimates
-output_mode: 2
+output_mode: 3
 
 # Use rostime for IMU stamp instead of sensor reported time
 use_rostime: true
