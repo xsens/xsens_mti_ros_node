@@ -1,5 +1,9 @@
 # Changelog for package xsens_mti_ros_node
 
+## 4.0.1 (2018-07-20)
+* Fixed typo in xsens.yaml file w.r.t MTi-3 filter profiles
+* Changed example message in ReadMe
+
 ## 4.0.0 (2018-07-04)
 * Merge pull request #33: Change custom_msgs to xsens_msgs
 * Merge pull request #32: Configure MTi device on startup

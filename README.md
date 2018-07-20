@@ -48,7 +48,7 @@
    or
    ```sh
    $ . $CATKIN/devel/setup.bash
-   $ rostopic echo /mti/sensor/imu
+   $ rostopic echo /mti/filter/orientation
    ```
 Tested with ROS Kinetic distribution, initially developed for ROS Indigo distribution.
 

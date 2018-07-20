@@ -17,7 +17,7 @@ odr: 10
 
 # Filter profiles (xkf-scenario)
 # MTi-2 [VRU_general:54]
-# MTi-2 [General:50, High_mag_dep:51, Dynamic:52, North_referenced:53, VRU_general:54] 
+# MTi-3 [General:50, High_mag_dep:51, Dynamic:52, North_referenced:53, VRU_general:54] 
 # MTi-7 [General:11, GeneralNoBaro:12, GeneralMag:13]
 # MTi-20/200 [VRU_general: 43]
 # MTi-30/300 [General:39, High_map_dep:40, Dynamic:41, Low_mag_dep:42, VRU_general:43]
