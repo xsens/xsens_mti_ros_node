@@ -1,5 +1,8 @@
 # Changelog for package xsens_mti_ros_node
 
+## 4.0.2 (2018-07-31)
+* Updated gps package required in prerequisites section of README
+
 ## 4.0.1 (2018-07-20)
 * Fixed typo in xsens.yaml file w.r.t MTi-3 filter profiles
 * Changed example message in ReadMe

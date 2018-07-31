@@ -9,9 +9,14 @@
   $ sudo insmod ./xsens_mt.ko
   ```
 
-* Install gps_common
+* Install gps_common or gps_umd as available based on the ROS distributable
   ```sh
-  $ sudo apt-get install ros-distro-gps-common
+  $ sudo apt-get install ros-kinetic-gps-umd
+
+  ```
+  or
+  ```sh
+  $ sudo apt-get install ros-kinetic-gps-common
   ```
 
 # Running the Xsens MTi ROS Node
