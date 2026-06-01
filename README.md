@@ -1,5 +1,5 @@
 **Notice: This ROS node implementation is deprecated. 
-Please use the new offical ROS node available as part of the Xsens MT Software Suite (version 2019.0 and later). For more information refer to http://wiki.ros.org/xsens_mti_driver**
+Please use the new official ROS node available [here](https://github.com/xsenssupport/Xsens_MTi_ROS_Driver_and_Ntrip_Client).**
 
 # Prerequisites
 
