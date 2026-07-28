@@ -216,10 +216,10 @@ class MTDevice(object):
 
 
 	## Restore MT device configuration to factory defaults (soft version).
+	# Assume the device is in Config state.
 	def RestoreFactoryDefaults(self):
 		"""Restore MT device configuration to factory defaults (soft version).
 		"""
-		self.GoToConfig()
 		self.write_ack(MID.RestoreFactoryDef)
 
 
@@ -380,10 +380,10 @@ class MTDevice(object):
 	# High-level utility functions
 	############################################################
 	## Configure the mode and settings of the MT MK4 device.
+	# Assume the device is in Config state.
 	# this configures the MK4 devices to publish Xsens sensorSample format
 	def configureMti(self, mtiSampleRate, mtiMode):
 		"""Configure the mode and settings of the MTMk4 device."""
-		self.GoToConfig()
 		self.timeout = math.pow(mtiSampleRate,-1)+MID.additionalTimeOutOffset  # additional 5ms leeway
 		print "Timeout changed to %1.3fs based on current settings."%(self.timeout)
 		mid = MID.SetOutputConfiguration
@@ -520,7 +520,6 @@ class MTDevice(object):
 		bridAck = struct.unpack('!B',dataAck)
 		brSettings = Baudrates.get_BR(bridAck[0])
 		print "Device configured at %1.0f bps"%(brSettings)
-		self.GoToMeasurement()
 		
 	def getMtiConfigBytes(self, dataMessage, dataFs):
 		H, L = (dataMessage&0xFF00)>>8, dataMessage&0x00FF
@@ -779,9 +778,9 @@ class MTDevice(object):
 
 	## Parse a legacy MTData message
 	## Change the baudrate, reset the device and reopen communication.
+	# Assume the device is in Config state.
 	def ChangeBaudrate(self, baudrate):
 		"""Change the baudrate, reset the device and reopen communication."""
-		self.GoToConfig()
 		brid = Baudrates.get_BRID(baudrate)
 		bridAck = self.SetBaudrate(brid)
 		if bridAck: # Testing if the BR was set correctly
@@ -980,13 +979,12 @@ def main():
 		except serial.SerialException:
 			raise MTException("unable to open %s"%device)
 		# execute actions
+		mt.GoToConfig()
 		if 'inspect' in actions:
-			mt.GoToConfig()
 			print "Device: %s at %d bps:"%(device, baudrate)
 			print "General configuration:", mt.ReqConfiguration()
 			print "Available scenarios:", mt.ReqAvailableScenarios()
 			print "Current scenario: %s (id: %d)"%mt.ReqCurrentScenario()[::-1]
-			mt.GoToMeasurement()
 		if 'change-baudrate' in actions:
 			print "Changing baudrate from %d to %d bps\n"%(baudrate, new_baudrate),
 			sys.stdout.flush()
@@ -999,15 +997,13 @@ def main():
 		if 'xkf-scenario' in actions:
 			print "Changing XKF scenario..."
 			sys.stdout.flush()
-			mt.GoToConfig()
 			mt.SetCurrentScenario(new_xkf)
-			mt.GoToMeasurement()
 			print "Ok"
 		if 'setMtiOutputConfiguration' in actions:
 			sys.stdout.flush()
-			mt.GoToConfig()
 			print "Device intiated at %d Hz"%(sampleRate)
 			mt.configureMti(sampleRate,mode)
+		mt.GoToMeasurement()
 		if 'echo' in actions:
 			try:
 				while True:
